@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Container, Box, TextField, Button, Typography, Paper } from '@mui/material';
+import { Container, Box, TextField, Button, Typography, Paper, Avatar } from '@mui/material';
+import RobotIcon from '@mui/icons-material/SmartToy'; // Import an icon or use an image for bot avatar
+import PersonIcon from '@mui/icons-material/Person'; // Import an icon or use an image for user avatar
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { web3Enable, web3Accounts, web3FromAddress } from '@polkadot/extension-dapp';
@@ -24,7 +26,7 @@ async function initializePolkadot() {
 
     if (extensions.length === 0) {
         console.log('Please install the Polkadot.js extension.');
-        return;
+        return "";
     }
 
     // Get all accounts
@@ -32,7 +34,7 @@ async function initializePolkadot() {
 
     if (accounts.length === 0) {
         console.log('No accounts found. Please add an account to the Polkadot.js extension.');
-        return;
+        return "";
     }
 
     // Connect to the Polkadot network
@@ -46,10 +48,11 @@ async function initializePolkadot() {
     // Example: Checking balance
     const { data: { free: balance } } = await api.query.system.account(account.address);
     console.log(`Balance of ${account.address}: ${balance.toHuman()}`);
+    return account.address;
 }
 
 function App() {
-    initializePolkadot();
+    const accountName = initializePolkadot();
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
 
@@ -80,19 +83,39 @@ function App() {
         <Container sx={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'space-between' }}>
             <Box sx={{ flexGrow: 1, padding: 2, overflowY: 'auto' }}>
                 {messages.map((msg, index) => (
-                <Paper
+                <Box
                     key={index}
                     sx={{
-                    padding: 2,
+                    display: 'flex',
+                    alignItems: 'flex-start',
                     marginY: 1,
-                    borderRadius: 1,
-                    alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                    backgroundColor: msg.sender === 'user' ? '#007bff' : '#e9ecef',
-                    color: msg.sender === 'user' ? 'white' : 'black',
+                    gap: 1,
+                    justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
                     }}
                 >
+                    <Avatar
+                    sx={{
+                        bgcolor: msg.sender === 'user' ? '#007bff' : '#e9ecef',
+                        color: msg.sender === 'user' ? 'white' : 'black',
+                    }}
+                    >
+                    {msg.sender === 'user' ? <PersonIcon /> : <RobotIcon />}
+                    </Avatar>
+                    <Paper
+                    sx={{
+                        padding: 2,
+                        borderRadius: 1,
+                        backgroundColor: msg.sender === 'user' ? '#007bff' : '#e9ecef',
+                        color: msg.sender === 'user' ? 'white' : 'black',
+                        maxWidth: '75%',
+                    }}
+                    >
+                    <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+                        {msg.sender === 'user' ? msg.sender : 'Robot'}
+                    </Typography>
                     <Typography>{msg.text}</Typography>
-                </Paper>
+                    </Paper>
+                </Box>
                 ))}
             </Box>
             <Box sx={{ display: 'flex', padding: 2, backgroundColor: '#f8f9fa' }}>
