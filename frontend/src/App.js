@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './App.css';
+import { Container, Box, TextField, Button, Typography, Paper } from '@mui/material';
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { web3Enable, web3Accounts, web3FromAddress } from '@polkadot/extension-dapp';
@@ -77,24 +77,39 @@ function App() {
     };
 
     return (
-        <div className="App">
-        <div className="chat-window">
-            {messages.map((msg, index) => (
-            <div key={index} className={`message ${msg.sender}`}>
-                {msg.text}
-            </div>
-            ))}
-        </div>
-        <div className="input-area">
-            <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            />
-            <button onClick={sendMessage}>Send</button>
-        </div>
-        </div>
+        <Container sx={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'space-between' }}>
+            <Box sx={{ flexGrow: 1, padding: 2, overflowY: 'auto' }}>
+                {messages.map((msg, index) => (
+                <Paper
+                    key={index}
+                    sx={{
+                    padding: 2,
+                    marginY: 1,
+                    borderRadius: 1,
+                    alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                    backgroundColor: msg.sender === 'user' ? '#007bff' : '#e9ecef',
+                    color: msg.sender === 'user' ? 'white' : 'black',
+                    }}
+                >
+                    <Typography>{msg.text}</Typography>
+                </Paper>
+                ))}
+            </Box>
+            <Box sx={{ display: 'flex', padding: 2, backgroundColor: '#f8f9fa' }}>
+                <TextField
+                fullWidth
+                variant="outlined"
+                size="small"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                sx={{ marginRight: 2 }}
+                />
+                <Button variant="contained" onClick={sendMessage}>
+                Send
+                </Button>
+            </Box>
+        </Container>
     );
 }
 
