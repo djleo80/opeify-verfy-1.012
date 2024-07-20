@@ -34,8 +34,8 @@ app.post('/api/gpt', async (req, res) => {
 
         //const gptMessage = response.data.choices[0].text.trim();
         const gptMessage = await model.invoke(userMessage);
-        console.log(`Message received:`);
-        res.json({ reply: gptMessage });
+        console.log(`Human: ${userMessage}\nGPT: ${gptMessage.content}`);
+        res.json({ reply: gptMessage.content });
     } catch (error) {
         res.status(500).send('Error communicating with GPT API');
     }
