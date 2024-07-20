@@ -4,7 +4,7 @@ import RobotIcon from '@mui/icons-material/SmartToy'; // Import an icon or use a
 import PersonIcon from '@mui/icons-material/Person'; // Import an icon or use an image for user avatar
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { web3Enable, web3Accounts, web3FromAddress } from '@polkadot/extension-dapp';
+import { web3Enable, web3Accounts } from '@polkadot/extension-dapp';
 
 
 // Example of querying the chain
@@ -26,7 +26,7 @@ async function initializePolkadot() {
 
     if (extensions.length === 0) {
         console.log('Please install the Polkadot.js extension.');
-        return "";
+        return;
     }
 
     // Get all accounts
@@ -34,7 +34,7 @@ async function initializePolkadot() {
 
     if (accounts.length === 0) {
         console.log('No accounts found. Please add an account to the Polkadot.js extension.');
-        return "";
+        return;
     }
 
     // Connect to the Polkadot network
@@ -43,16 +43,15 @@ async function initializePolkadot() {
 
     // Use the first account for transactions
     const account = accounts[0];
-    const injector = await web3FromAddress(account.address);
+    //const injector = await web3FromAddress(account.address);
 
     // Example: Checking balance
     const { data: { free: balance } } = await api.query.system.account(account.address);
     console.log(`Balance of ${account.address}: ${balance.toHuman()}`);
-    return account.address;
 }
 
 function App() {
-    const accountName = initializePolkadot();
+    initializePolkadot();
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
 
