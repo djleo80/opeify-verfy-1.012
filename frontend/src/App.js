@@ -42,7 +42,7 @@ async function initializePolkadot() {
     const api = await ApiPromise.create({ provider });
 
     // Use the first account for transactions
-    const account = accounts[0];
+    const account = accounts[0]; 
     //const injector = await web3FromAddress(account.address);
 
     // Example: Checking balance
