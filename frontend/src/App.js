@@ -19,6 +19,7 @@ console.log(`Connected to ${chainName}`);
 //const result = await contract.methodName(params);
 //console.log(result.toHuman());*/
 
+let pendingTransaction = true;
 
 async function initializePolkadot() {
     // Check if the Polkadot.js extension is installed
@@ -69,12 +70,19 @@ function App() {
     };
 
     const getGPTResponse = async (input) => {
+        if (input === 'CONFIRM' && pendingTransaction) {
+            pendingTransaction = false;
+            // transaction logic here
+        }
         const response = await fetch('/api/gpt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: input })
         });
         const data = await response.json();
+        if (data.isTransaction) {
+            pendingTransaction = true;
+        }
         return { sender: 'bot', text: data.reply };
     };
 

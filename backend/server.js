@@ -109,7 +109,7 @@ async function handlePrompt(user_input) {
  
     const response = await model.invoke(promptText);
 
-    console.log(response.content)
+    //console.log(response.content)
  
     try {
         if (String(response.content).startsWith('```') && String(response.content).endsWith('```')) {
@@ -154,34 +154,34 @@ app.post('/api/gpt', async (req, res) => {
 
         if (gptMessage.type == 'general') {
             console.log(`Human: ${userMessage}\nGPT (general): ${gptMessage.info}`);
-            res.json({ reply: gptMessage.info });
+            res.json({ reply: gptMessage.info, isTransaction: false });
         }
         else if (gptMessage.type == 'transaction') {
             // Transaction
             console.log("Transaction");
-            const reply = `Sent ${gptMessage.amount} to ${gptMessage.dest}`;
+            const reply = `Amount: ${gptMessage.amount}\nDestination: ${gptMessage.dest}\nPlease confirm by sending <b>CONFIRM</b>.`;
             console.log(`Human: ${userMessage}\nGPT (transaction): ${reply}`);
-            res.json({ reply: reply });
+            res.json({ reply: reply, isTransaction: true });
         }
         else if (gptMessage.type == 'account') {
             // Account details
             // get account info
-            res.json({ reply });
+            res.json({ reply, isTransaction: false });
         }
         else if (gptMessage.type == 'blockchains') {
             // Blockchain prompt
             const promptText = blockchainPrompt.replace('{query}', gptMessage.query);
             const response = await model.invoke(promptText);
-            res.json({ reply: response.content });
+            res.json({ reply: response.content, isTransaction: false });
         }
         else if (gptMessage.type == 'smart_contract') {
             // Smart contract prompt
             const promptText = smartContractPrompt.replace('{query}', gptMessage.query);
             const response = await model.invoke(promptText);
-            res.json({ reply: response.content });
+            res.json({ reply: response.content, isTransaction: false });
         }
         else { //wrong
-            res.json({ reply: `Unable to process machine response.\n${gptMessage.content}` });
+            res.json({ reply: `Unable to process machine response.\n${gptMessage.content}`, isTransaction: false });
         }
 
         //console.log(`Human: ${userMessage}\nGPT: ${gptMessage.content}`);
