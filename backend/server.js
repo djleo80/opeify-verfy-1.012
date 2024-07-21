@@ -159,9 +159,9 @@ app.post('/api/gpt', async (req, res) => {
         else if (gptMessage.type == 'transaction') {
             // Transaction
             console.log("Transaction");
-            const reply = `Amount: ${gptMessage.amount}\nDestination: ${gptMessage.dest}\nPlease confirm by sending <b>CONFIRM</b>.`;
+            const reply = `Amount: ${gptMessage.amount}<br/>Destination: ${gptMessage.dest}<br/>Please confirm by sending <b>CONFIRM</b>.`;
             console.log(`Human: ${userMessage}\nGPT (transaction): ${reply}`);
-            res.json({ reply: reply, isTransaction: true });
+            res.json({ reply: reply, isTransaction: true, amount: gptMessage.amount, dest: gptMessage.dest });
         }
         else if (gptMessage.type == 'account') {
             // Account details

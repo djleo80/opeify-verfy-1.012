@@ -6,9 +6,10 @@ import PersonIcon from '@mui/icons-material/Person'; // Import an icon or use an
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { web3Enable, web3Accounts, web3FromAddress } from '@polkadot/extension-dapp';
 
-let pendingTransaction = true;
+let pendingTransaction = false;
 let api;
 let account;
+let amount, dest;
 
 async function initializePolkadot() {
     // Check if the Polkadot.js extension is installed
@@ -39,7 +40,7 @@ async function initializePolkadot() {
     console.log(`Balance of ${account.address}: ${balance.toHuman()}`);
 }
 
-async function handleTransaction() {
+async function handleTransaction(dest, amount) {
     if (!api || !account) {
         console.log('API or account not initialized.');
         return { sender: 'bot', text: 'Error: API or account not initialized.' };
@@ -48,14 +49,14 @@ async function handleTransaction() {
     try {
         const injector = await web3FromAddress(account.address);
 
-        const transfer = api.tx.balances.transfer('TARGET_ADDRESS_HERE', 10000000000); // Replace with actual target address and amount
+        const transfer = api.tx.balances.transferAllowDeath(dest, amount); // Replace with actual target address and amount
 
         const hash = await transfer.signAndSend(account.address, { signer: injector.signer });
         console.log('Transaction sent with hash:', hash.toHex());
         return { sender: 'bot', text: 'Transaction confirmed and sent.' };
     } catch (error) {
         console.log('Error sending transaction:', error);
-        return { sender: 'bot', text: 'Error sending transaction.' };
+        return { sender: 'bot', text: `Error sending transaction: ${error}` };
     }
 }
 
@@ -84,7 +85,7 @@ function App() {
         if (input === 'CONFIRM' && pendingTransaction) {
             pendingTransaction = false;
             // transaction logic here
-            return await handleTransaction();
+            return await handleTransaction(dest, amount);
         }
 
         const response = await fetch('/api/gpt', {
@@ -95,6 +96,8 @@ function App() {
         const data = await response.json();
         if (data.isTransaction) {
             pendingTransaction = true;
+            dest = data.dest;
+            amount = data.amount;
         }
         return { sender: 'bot', text: data.reply };
     };
@@ -133,7 +136,9 @@ function App() {
                             <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
                                 {msg.sender === 'user' ? msg.sender : 'Robot'}
                             </Typography>
-                            <Typography>{msg.text}</Typography>
+                            <Typography
+                                dangerouslySetInnerHTML={{ __html: msg.text }}
+                            />
                         </Paper>
                     </Box>
                 ))}
