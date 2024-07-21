@@ -6,7 +6,7 @@ const { ChatOpenAI } = require('@langchain/openai');
 const { ApiPromise, WsProvider } = require('@polkadot/api');
 
 const model = new ChatOpenAI({
-    model: "gpt-3.5-turbo",
+    model: "gpt-4o",
     temperature: 0.0,
     apiKey: process.env.OPENAI_API_KEY
 });
