@@ -134,7 +134,7 @@ function App() {
                             }}
                         >
                             <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                                {msg.sender === 'user' ? msg.sender : 'Robot'}
+                                {msg.sender === 'user' ? msg.sender : 'Openify Assistant'}
                             </Typography>
                             <Typography
                                 dangerouslySetInnerHTML={{ __html: msg.text }}
