@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Box, TextField, Button, Typography, Paper, Avatar } from '@mui/material';
-import RobotIcon from '@mui/icons-material/SmartToy'; // Import an icon or use an image for bot avatar
-import PersonIcon from '@mui/icons-material/Person'; // Import an icon or use an image for user avatar
+import RobotIcon from '@mui/icons-material/SmartToy';
+import PersonIcon from '@mui/icons-material/Person';
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { web3Enable, web3Accounts, web3FromAddress } from '@polkadot/extension-dapp';
@@ -35,11 +35,12 @@ async function initializePolkadot() {
     // Use the first account for transactions
     account = accounts[0];
 
-    // Example: Checking balance
+    // Checking balance
     const { data: { free: balance } } = await api.query.system.account(account.address);
     console.log(`Balance of ${account.address}: ${balance.toHuman()}`);
 }
 
+// Handle Transaction
 async function handleTransaction(dest, amount) {
     if (!api || !account) {
         console.log('API or account not initialized.');
@@ -49,7 +50,7 @@ async function handleTransaction(dest, amount) {
     try {
         const injector = await web3FromAddress(account.address);
 
-        const transfer = api.tx.balances.transferAllowDeath(dest, amount); // Replace with actual target address and amount
+        const transfer = api.tx.balances.transferAllowDeath(dest, amount);
 
         const hash = await transfer.signAndSend(account.address, { signer: injector.signer });
         console.log('Transaction sent with hash:', hash.toHex());
@@ -74,7 +75,7 @@ function App() {
         const userMessage = { sender: 'user', text: input };
         setMessages([...messages, userMessage]);
 
-        // Send request to GPT API here
+        // Send request to GPT API
         const responseMessage = await getGPTResponse(input);
         setMessages([...messages, userMessage, responseMessage]);
 
