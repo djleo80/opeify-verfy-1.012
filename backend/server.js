@@ -1,13 +1,18 @@
 require('dotenv').config();
 const express = require('express');
-//const axios = require('axios');
 const bodyParser = require('body-parser');
 const { ChatOpenAI } = require('@langchain/openai');
 const { ApiPromise, WsProvider } = require('@polkadot/api');
 
-const model = new ChatOpenAI({
-    model: "gpt-4o",
+const promptModel = new ChatOpenAI({
+    model: "gpt-3.5-turbo",
     temperature: 0.0,
+    apiKey: process.env.OPENAI_API_KEY
+});
+
+const generateModel = new ChatOpenAI({
+    model: "gpt-3.5-turbo",
+    temperature: 0.7,
     apiKey: process.env.OPENAI_API_KEY
 });
 
@@ -107,9 +112,7 @@ With the following request delimited by <tag>, generate a smart contract and out
 async function handlePrompt(user_input) {
     const promptText = templateMainPrompt.replace('{user_input}', user_input);
  
-    const response = await model.invoke(promptText);
-
-    //console.log(response.content)
+    const response = await promptModel.invoke(promptText);
  
     try {
         if (String(response.content).startsWith('```') && String(response.content).endsWith('```')) {
@@ -126,8 +129,6 @@ async function handlePrompt(user_input) {
     }
 }
 
-
-
 async function sendTransaction(sender, receiver, amount) {
     const tx = api.tx.balances.transfer(receiver, amount);
     const result = await tx.signAndSend(sender);
@@ -138,7 +139,7 @@ async function blockchainMain() {
     const provider = new WsProvider('wss://rpc.astar.network');
     const api = await ApiPromise.create({ provider });
 
-    // Example: Query the latest block number
+    // Query latest block number
     const lastHeader = await api.rpc.chain.getHeader();
     console.log(`The latest block number is ${lastHeader.number}`);
 }
@@ -171,13 +172,13 @@ app.post('/api/gpt', async (req, res) => {
         else if (gptMessage.type == 'blockchains') {
             // Blockchain prompt
             const promptText = blockchainPrompt.replace('{query}', gptMessage.query);
-            const response = await model.invoke(promptText);
+            const response = await generateModel.invoke(promptText);
             res.json({ reply: response.content, isTransaction: false });
         }
         else if (gptMessage.type == 'smart_contract') {
             // Smart contract prompt
             const promptText = smartContractPrompt.replace('{query}', gptMessage.query);
-            const response = await model.invoke(promptText);
+            const response = await generateModel.invoke(promptText);
             res.json({ reply: response.content, isTransaction: false });
         }
         else { //wrong
