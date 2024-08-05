@@ -94,6 +94,14 @@ Only output in the format specified for each category. Always start your respons
 <tag>{user_input}</tag>
 `;
 
+const templateAccountEnquiry = `
+Given the following user account information enclosed by \`\`\`, answer the user enquiry delimited by <tag>.
+
+\`\`\`{account_info}\`\`\`
+
+<tag>{user_enquiry}</tag>
+`;
+
 const blockchainPrompt = `
 You are a very smart Blockchains expert, and especially an expert in the Polkadot ecosystem. You are so good because you are able to explain difficulty concepts with relatively straightforward examples. \
 When answering questions, you should also make references to relevant knowledge inside Polkadot ecosystem, and try to introduce the user to the amazing world of Web3 for Economics with Polkadot. 
@@ -145,7 +153,7 @@ async function blockchainMain() {
 }
 
 app.post('/api/gpt', async (req, res) => {
-    const userMessage = req.body.message;
+    const { message: userMessage, accountInfo: accountInfoStr } = req.body;
 
     try {
         //blockchainMain().catch(console.error);
@@ -160,14 +168,16 @@ app.post('/api/gpt', async (req, res) => {
         else if (gptMessage.type == 'transaction') {
             // Transaction
             console.log("Transaction");
-            const reply = `Amount: ${gptMessage.amount}<br/>Destination: ${gptMessage.dest}<br/>Please confirm by sending <b>CONFIRM</b>.`;
+            const reply = `Amount: <code>${gptMessage.amount}</code> $DOT<br/>Destination: <code>${gptMessage.dest}</code><br/>Please confirm by sending <b>CONFIRM</b>.`;
             console.log(`Human: ${userMessage}\nGPT (transaction): ${reply}`);
             res.json({ reply: reply, isTransaction: true, amount: gptMessage.amount, dest: gptMessage.dest });
         }
         else if (gptMessage.type == 'account') {
             // Account details
             // get account info
-            res.json({ reply, isTransaction: false });
+            const promptText = templateAccountEnquiry.replace('{account_info}', accountInfoStr).replace('{user_enquiry}', gptMessage.query);
+            const response = await generateModel.invoke(promptText);
+            res.json({ reply: response.content, isAccount: true });
         }
         else if (gptMessage.type == 'blockchains') {
             // Blockchain prompt

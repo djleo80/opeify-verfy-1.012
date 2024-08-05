@@ -10,6 +10,17 @@ let pendingTransaction = false;
 let api;
 let account;
 let amount, dest;
+let accountInfoStr = '';
+
+const transactionHistory = [];
+
+const accountInfoStrTemplate = `
+User Account Information:
+Public Key Address (Polkadot Mainnet): {pub_key_polk}
+Public Key Address (Subtrate Format): {pub_key_subtrate}
+Account Balance: {balance}
+Additional Information: {additional_info}
+`
 
 async function initializePolkadot() {
     // Check if the Polkadot.js extension is installed
@@ -38,6 +49,11 @@ async function initializePolkadot() {
     // Checking balance
     const { data: { free: balance } } = await api.query.system.account(account.address);
     console.log(`Balance of ${account.address}: ${balance.toHuman()}`);
+    accountInfoStr = accountInfoStrTemplate
+        .replace('{pub_key_polk}', account.address)
+        .replace('{pub_key_subtrate}', account.address) // To-Do
+        .replace('{balance}', balance.toHuman())
+        .replace('{additional_info}', ''); // To-Do
 }
 
 // Handle Transaction
@@ -54,7 +70,7 @@ async function handleTransaction(dest, amount) {
 
         const hash = await transfer.signAndSend(account.address, { signer: injector.signer });
         console.log('Transaction sent with hash:', hash.toHex());
-        return { sender: 'bot', text: 'Transaction confirmed and sent.' };
+        return { sender: 'bot', text: `Transaction confirmed and sent. <br/> Hash: ${hash.toHex()}` };
     } catch (error) {
         console.log('Error sending transaction:', error);
         return { sender: 'bot', text: `Error sending transaction: ${error}` };
@@ -85,14 +101,14 @@ function App() {
     const getGPTResponse = async (input) => {
         if (input === 'CONFIRM' && pendingTransaction) {
             pendingTransaction = false;
-            // transaction logic here
+
             return await handleTransaction(dest, amount);
         }
 
         const response = await fetch('/api/gpt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: input })
+            body: JSON.stringify({ message: input, accountInfo: accountInfoStr })
         });
         const data = await response.json();
         if (data.isTransaction) {
