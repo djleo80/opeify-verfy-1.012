@@ -19,7 +19,8 @@ User Account Information:
 Public Key Address (Polkadot Mainnet): {pub_key_polk}
 Public Key Address (Subtrate Format): {pub_key_subtrate}
 Account Balance: {balance}
-Additional Information: {additional_info}
+{recent_transactions}
+{additional_info}
 `
 
 async function initializePolkadot() {
@@ -54,6 +55,10 @@ async function initializePolkadot() {
         .replace('{pub_key_subtrate}', account.address) // To-Do
         .replace('{balance}', balance.toHuman())
         .replace('{additional_info}', ''); // To-Do
+    if (transactionHistory.length) {
+        const recentTransactions = transactionHistory.slice(-3, 0);
+        accountInfoStr = accountInfoStr.replace('{recent_transactions}', JSON.stringify(recentTransactions));
+    }
 }
 
 // Handle Transaction
@@ -66,10 +71,11 @@ async function handleTransaction(dest, amount) {
     try {
         const injector = await web3FromAddress(account.address);
 
-        const transfer = api.tx.balances.transferAllowDeath(dest, amount);
+        const transfer = api.tx.balances.transferAllowDeath(dest, amount); // To-Do: Check Allow Death with user for Confirmation!
 
         const hash = await transfer.signAndSend(account.address, { signer: injector.signer });
         console.log('Transaction sent with hash:', hash.toHex());
+        transactionHistory.push({ dest, hash: hash.toHex(), amount });
         return { sender: 'bot', text: `Transaction confirmed and sent. <br/> Hash: ${hash.toHex()}` };
     } catch (error) {
         console.log('Error sending transaction:', error);
