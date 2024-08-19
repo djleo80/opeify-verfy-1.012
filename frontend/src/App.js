@@ -71,7 +71,7 @@ async function handleTransaction(dest, amount) {
     try {
         const injector = await web3FromAddress(account.address);
 
-        const transfer = api.tx.balances.transferAllowDeath(dest, amount); // To-Do: Check Allow Death with user for Confirmation!
+        const transfer = api.tx.balances.transferAllowDeath(dest, amount); // To-Do
 
         const hash = await transfer.signAndSend(account.address, { signer: injector.signer });
         console.log('Transaction sent with hash:', hash.toHex());
