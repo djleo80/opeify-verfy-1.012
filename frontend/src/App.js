@@ -47,21 +47,20 @@ async function initializePolkadot() {
     // Use the first account for transactions
     account = accounts[0];
 
-    // Checking balance
+
     const { data: { free: balance } } = await api.query.system.account(account.address);
     console.log(`Balance of ${account.address}: ${balance.toHuman()}`);
     accountInfoStr = accountInfoStrTemplate
         .replace('{pub_key_polk}', account.address)
-        .replace('{pub_key_subtrate}', account.address) // To-Do
+        .replace('{pub_key_subtrate}', account.address)
         .replace('{balance}', balance.toHuman())
-        .replace('{additional_info}', ''); // To-Do
+        .replace('{additional_info}', '');
     if (transactionHistory.length) {
         const recentTransactions = transactionHistory.slice(-3, 0);
         accountInfoStr = accountInfoStr.replace('{recent_transactions}', JSON.stringify(recentTransactions));
     }
 }
 
-// Handle Transaction
 async function handleTransaction(dest, amount) {
     if (!api || !account) {
         console.log('API or account not initialized.');
@@ -71,7 +70,7 @@ async function handleTransaction(dest, amount) {
     try {
         const injector = await web3FromAddress(account.address);
 
-        const transfer = api.tx.balances.transferAllowDeath(dest, amount); // To-Do
+        const transfer = api.tx.balances.transferAllowDeath(dest, amount);
 
         const hash = await transfer.signAndSend(account.address, { signer: injector.signer });
         console.log('Transaction sent with hash:', hash.toHex());
@@ -97,7 +96,6 @@ function App() {
         const userMessage = { sender: 'user', text: input };
         setMessages([...messages, userMessage]);
 
-        // Send request to GPT API
         const responseMessage = await getGPTResponse(input);
         setMessages([...messages, userMessage, responseMessage]);
 
