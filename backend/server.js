@@ -34,7 +34,8 @@ Only output in the format specified for each category. Always start your respons
     {
         "type": "transaction",
         "amount": number, // Amount of Polkadot to transfer. If not provided, put 0. 
-        "dest": string // A string of the destination cryptocurrency wallet address. If not provided. put '0'.
+        "dest": string, // A string of the destination cryptocurrency wallet address. If not provided. put '0'.
+        "allowDeath": boolean // If the transfer should wipe the account. If not provided, default to false.
     }
 ]
 \`\`\`
@@ -166,9 +167,9 @@ app.post('/api/gpt', async (req, res) => {
         }
         else if (gptMessage.type == 'transaction') {
             console.log("Transaction");
-            const reply = `Amount: <code>${gptMessage.amount}</code> $DOT<br/>Destination: <code>${gptMessage.dest}</code><br/>Please confirm by sending <b>CONFIRM</b>.`;
+            const reply = `Amount: <code>${gptMessage.amount}</code> $DOT<br/>Destination: <code>${gptMessage.dest}</code>${gptMessage.allowDeath ? "Allow Death: True<br/>" : ""}<br/>Please confirm by sending <b>CONFIRM</b>.`;
             console.log(`Human: ${userMessage}\nGPT (transaction): ${reply}`);
-            res.json({ reply: reply, isTransaction: true, amount: gptMessage.amount, dest: gptMessage.dest });
+            res.json({ reply: reply, isTransaction: true, amount: gptMessage.amount, dest: gptMessage.dest, allowDeath: true });
         }
         else if (gptMessage.type == 'account') {
             const promptText = templateAccountEnquiry.replace('{account_info}', accountInfoStr).replace('{user_enquiry}', gptMessage.query);

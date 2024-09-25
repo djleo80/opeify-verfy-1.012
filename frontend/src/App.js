@@ -9,7 +9,7 @@ import { web3Enable, web3Accounts, web3FromAddress } from '@polkadot/extension-d
 let pendingTransaction = false;
 let api;
 let account;
-let amount, dest;
+let amount, dest, allowDeath;
 let accountInfoStr = '';
 
 const transactionHistory = [];
@@ -61,7 +61,7 @@ async function initializePolkadot() {
     }
 }
 
-async function handleTransaction(dest, amount) {
+async function handleTransaction(dest, amount, allowDeath) {
     if (!api || !account) {
         console.log('API or account not initialized.');
         return { sender: 'bot', text: 'Error: API or account not initialized.' };
@@ -70,7 +70,7 @@ async function handleTransaction(dest, amount) {
     try {
         const injector = await web3FromAddress(account.address);
 
-        const transfer = api.tx.balances.transferAllowDeath(dest, amount);
+        const transfer = allowDeath ? api.tx.balances.transferAllowDeath(dest, amount) : api.tx.balances.transfer(dest, amount);
 
         const hash = await transfer.signAndSend(account.address, { signer: injector.signer });
         console.log('Transaction sent with hash:', hash.toHex());
@@ -106,7 +106,7 @@ function App() {
         if (input === 'CONFIRM' && pendingTransaction) {
             pendingTransaction = false;
 
-            return await handleTransaction(dest, amount);
+            return await handleTransaction(dest, amount, allowDeath);
         }
 
         const response = await fetch('/api/gpt', {
@@ -119,6 +119,7 @@ function App() {
             pendingTransaction = true;
             dest = data.dest;
             amount = data.amount;
+            allowDeath = data.allowDeath;
         }
         return { sender: 'bot', text: data.reply };
     };
