@@ -75,10 +75,10 @@ async function handleTransaction(dest, amount, allowDeath) {
         const hash = await transfer.signAndSend(account.address, { signer: injector.signer });
         console.log('Transaction sent with hash:', hash.toHex());
         transactionHistory.push({ dest, hash: hash.toHex(), amount });
-        return { sender: 'bot', text: `Transaction confirmed and sent. <br/> Hash: ${hash.toHex()}` };
+        return { sender: 'bot', text: `Transaction confirmed and sent. <br/> Hash: ${hash.toHex()}.` };
     } catch (error) {
         console.log('Error sending transaction:', error);
-        return { sender: 'bot', text: `Error sending transaction: ${error}` };
+        return { sender: 'bot', text: `Error sending transaction: ${error}.<br/> You may specify to allow death when prompting the transfer.` };
     }
 }
 
