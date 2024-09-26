@@ -56,7 +56,7 @@ async function initializePolkadot() {
         .replace('{balance}', balance.toHuman())
         .replace('{additional_info}', '');
     if (transactionHistory.length) {
-        const recentTransactions = transactionHistory.slice(-3, 0);
+        const recentTransactions = transactionHistory.length <= 3 : transactionHistory : transactionHistory.slice(-3, 0);
         accountInfoStr = accountInfoStr.replace('{recent_transactions}', JSON.stringify(recentTransactions));
     }
 }
