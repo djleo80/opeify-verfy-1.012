@@ -49,7 +49,7 @@ async function initializePolkadot() {
 
 
     const { data: { free: balance } } = await api.query.system.account(account.address);
-    console.log(`Balance of ${account.address}: ${balance.toHuman()}`);
+
     accountInfoStr = accountInfoStrTemplate
         .replace('{pub_key_polk}', account.address)
         .replace('{pub_key_subtrate}', account.address)
@@ -63,7 +63,6 @@ async function initializePolkadot() {
 
 async function handleTransaction(dest, amount, allowDeath) {
     if (!api || !account) {
-        console.log('API or account not initialized.');
         return { sender: 'bot', text: 'Error: API or account not initialized.' };
     }
 
@@ -73,11 +72,9 @@ async function handleTransaction(dest, amount, allowDeath) {
         const transfer = allowDeath ? api.tx.balances.transferAllowDeath(dest, amount) : api.tx.balances.transfer(dest, amount);
 
         const hash = await transfer.signAndSend(account.address, { signer: injector.signer });
-        console.log('Transaction sent with hash:', hash.toHex());
         transactionHistory.push({ dest, hash: hash.toHex(), amount });
         return { sender: 'bot', text: `Transaction confirmed and sent. <br/> Hash: ${hash.toHex()}.` };
     } catch (error) {
-        console.log('Error sending transaction:', error);
         return { sender: 'bot', text: `Error sending transaction: ${error}.<br/> You may specify to allow death when prompting the transfer.` };
     }
 }
