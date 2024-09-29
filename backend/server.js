@@ -19,7 +19,17 @@ const generateModel = new ChatOpenAI({
 const app = express();
 const port = 3001;
 
+const rateLimit = require('express-rate-limit');
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // Limit each IP to 100 requests per window
+});
+
+const morgan = require('morgan');
+
 app.use(bodyParser.json());
+app.use(limiter);
+app.use(morgan('combined'));
 
 const templateMainPrompt = `
 Given the user query delimited by <tag>, match it to the cloest category from the list of six categories below, then follow the given instructions for that specific category. 
@@ -154,6 +164,14 @@ async function blockchainMain() {
 
 app.post('/api/gpt', async (req, res) => {
     const { message: userMessage, accountInfo: accountInfoStr } = req.body;
+
+    if (!userMessage || typeof userMessage !== 'string') {
+        return res.status(400).json({ error: 'Invalid user message' });
+    }
+
+    if (accountInfoStr && typeof accountInfoStr !== 'string') {
+        return res.status(400).json({ error: 'Invalid account info' });
+    }
 
     try {
         //blockchainMain().catch(console.error);
