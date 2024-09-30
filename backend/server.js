@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const { ChatOpenAI } = require('@langchain/openai');
-const { ApiPromise, WsProvider } = require('@polkadot/api');
+const { sendTransaction } = require('./blockchainHandler');
 
 const promptModel = new ChatOpenAI({
     model: "gpt-3.5-turbo",
@@ -145,21 +145,6 @@ async function handlePrompt(user_input) {
         console.log(response.content);
         return {};
     }
-}
-
-async function sendTransaction(sender, receiver, amount) {
-    const tx = api.tx.balances.transfer(receiver, amount);
-    const result = await tx.signAndSend(sender);
-    console.log(`Transaction result: ${result}`);
-}
-
-async function blockchainMain() {
-    const provider = new WsProvider('wss://rpc.astar.network');
-    const api = await ApiPromise.create({ provider });
-
-    // Query latest block number
-    const lastHeader = await api.rpc.chain.getHeader();
-    console.log(`The latest block number is ${lastHeader.number}`);
 }
 
 app.post('/api/gpt', async (req, res) => {
