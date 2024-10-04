@@ -1,166 +1,199 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Box, TextField, Button, Typography, Paper, Avatar } from '@mui/material';
-import RobotIcon from '@mui/icons-material/SmartToy';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Container, Box, Avatar, Paper, Typography, TextField, Button } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
-
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import RobotIcon from '@mui/icons-material/Android';
 import { web3Enable, web3Accounts, web3FromAddress } from '@polkadot/extension-dapp';
+import { ApiPromise, WsProvider } from '@polkadot/api';
 
-let pendingTransaction = false;
-let api;
-let account;
-let amount, dest, allowDeath;
+// Initialize Polkadot variables
+let api = null;
+let account = null;
+let transactionHistory = [];
+let accountInfoStrTemplate = `
+    Public Key Polkadot: {pub_key_polk}
+    Public Key Substrate: {pub_key_subtrate}
+    Balance: {balance}
+    Recent Transactions: {recent_transactions}
+    Additional Info: {additional_info}
+`;
 let accountInfoStr = '';
+let dest = null;
+let amount = null;
+let allowDeath = null;
 
-const transactionHistory = [];
+async function initializePolkadot(setAccountInfo) {
+    try {
+        // Enable Polkadot.js extension
+        const extensions = await web3Enable('OpeifyVerfy');
+        if (extensions.length === 0) {
+            console.log('Please install the Polkadot.js extension.');
+            return;
+        }
 
-const accountInfoStrTemplate = `
-User Account Information:
-Public Key Address (Polkadot Mainnet): {pub_key_polk}
-Public Key Address (Subtrate Format): {pub_key_subtrate}
-Account Balance: {balance}
-{recent_transactions}
-{additional_info}
-`
+        // Get all accounts
+        const accounts = await web3Accounts();
+        if (accounts.length === 0) {
+            console.log('No accounts found. Please add an account to the Polkadot.js extension.');
+            return;
+        }
 
-async function initializePolkadot() {
-    // Check if the Polkadot.js extension is installed
-    const extensions = await web3Enable('OpeifyVerfy');
+        // Connect to Polkadot network
+        const provider = new WsProvider('wss://rpc.polkadot.io');
+        api = await ApiPromise.create({ provider });
+        account = accounts[0];
 
-    if (extensions.length === 0) {
-        console.log('Please install the Polkadot.js extension.');
-        return;
-    }
+        // Fetch account balance
+        const { data: { free: balance } } = await api.query.system.account(account.address);
 
-    // Get all accounts
-    const accounts = await web3Accounts();
+        // Update account info string
+        accountInfoStr = accountInfoStrTemplate
+            .replace('{pub_key_polk}', account.address)
+            .replace('{pub_key_subtrate}', account.address)
+            .replace('{balance}', balance.toHuman())
+            .replace('{additional_info}', '');
 
-    if (accounts.length === 0) {
-        console.log('No accounts found. Please add an account to the Polkadot.js extension.');
-        return;
-    }
+        if (transactionHistory.length) {
+            const recentTransactions = transactionHistory.length <= 3
+                ? transactionHistory
+                : transactionHistory.slice(-3);
+            accountInfoStr = accountInfoStr.replace('{recent_transactions}', JSON.stringify(recentTransactions));
+        }
 
-    // Connect to the Polkadot network
-    const provider = new WsProvider('wss://rpc.polkadot.io'); // Use appropriate RPC endpoint
-    api = await ApiPromise.create({ provider });
-
-    // Use the first account for transactions
-    account = accounts[0];
-
-
-    const { data: { free: balance } } = await api.query.system.account(account.address);
-
-    accountInfoStr = accountInfoStrTemplate
-        .replace('{pub_key_polk}', account.address)
-        .replace('{pub_key_subtrate}', account.address)
-        .replace('{balance}', balance.toHuman())
-        .replace('{additional_info}', '');
-    if (transactionHistory.length) {
-        const recentTransactions = transactionHistory.length <= 3 ? transactionHistory : transactionHistory.slice(-3, 0);
-        accountInfoStr = accountInfoStr.replace('{recent_transactions}', JSON.stringify(recentTransactions));
+        setAccountInfo(accountInfoStr);
+    } catch (error) {
+        console.error('Error initializing Polkadot:', error);
     }
 }
 
-async function handleTransaction(dest, amount, allowDeath) {
+async function handleTransaction(setMessages, setPendingTransaction) {
     if (!api || !account) {
-        return { sender: 'bot', text: 'Error: API or account not initialized.' };
+        setMessages((prev) => [
+            ...prev,
+            { sender: 'bot', text: 'Error: API or account not initialized.' },
+        ]);
+        return;
     }
 
     try {
         const injector = await web3FromAddress(account.address);
 
-        const transfer = allowDeath ? api.tx.balances.transferAllowDeath(dest, amount) : api.tx.balances.transfer(dest, amount);
+        const transfer = allowDeath
+            ? api.tx.balances.transferAllowDeath(dest, amount)
+            : api.tx.balances.transfer(dest, amount);
 
         const hash = await transfer.signAndSend(account.address, { signer: injector.signer });
         transactionHistory.push({ dest, hash: hash.toHex(), amount });
-        return { sender: 'bot', text: `Transaction confirmed and sent. <br/> Hash: ${hash.toHex()}.` };
+
+        setMessages((prev) => [
+            ...prev,
+            { sender: 'bot', text: `Transaction confirmed and sent. <br/> Hash: ${hash.toHex()}.` },
+        ]);
+
+        setPendingTransaction(false);
     } catch (error) {
-        return { sender: 'bot', text: `Error sending transaction: ${error}.<br/> You may specify to allow death when prompting the transfer.` };
+        setMessages((prev) => [
+            ...prev,
+            { sender: 'bot', text: `Error sending transaction: ${error.message}.` },
+        ]);
     }
 }
 
 function App() {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
+    const [accountInfo, setAccountInfo] = useState('');
+    const [pendingTransaction, setPendingTransaction] = useState(false);
 
+    // Initialize Polkadot when the component mounts
     useEffect(() => {
-        initializePolkadot();
+        initializePolkadot(setAccountInfo);
     }, []);
 
-    const sendMessage = async () => {
+    const sendMessage = useCallback(async () => {
         if (input.trim() === '') return;
 
         const userMessage = { sender: 'user', text: input };
-        setMessages([...messages, userMessage]);
+        setMessages((prev) => [...prev, userMessage]);
 
         const responseMessage = await getGPTResponse(input);
-        setMessages([...messages, userMessage, responseMessage]);
+        setMessages((prev) => [...prev, userMessage, responseMessage]);
 
         setInput('');
-    };
+    }, [input]);
 
-    const getGPTResponse = async (input) => {
+    const getGPTResponse = useCallback(async (input) => {
         if (input === 'CONFIRM' && pendingTransaction) {
-            pendingTransaction = false;
-
-            return await handleTransaction(dest, amount, allowDeath);
+            return await handleTransaction(setMessages, setPendingTransaction);
         }
 
-        const response = await fetch('/api/gpt', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: input, accountInfo: accountInfoStr })
-        });
-        const data = await response.json();
-        if (data.isTransaction) {
-            pendingTransaction = true;
-            dest = data.dest;
-            amount = data.amount;
-            allowDeath = data.allowDeath;
+        try {
+            const response = await fetch('/api/gpt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: input, accountInfo }),
+            });
+
+            const data = await response.json();
+
+            if (data.isTransaction) {
+                setPendingTransaction(true);
+                dest = data.dest;
+                amount = data.amount;
+                allowDeath = data.allowDeath;
+            }
+
+            return { sender: 'bot', text: data.reply };
+        } catch (error) {
+            return { sender: 'bot', text: `Error: ${error.message}` };
         }
-        return { sender: 'bot', text: data.reply };
+    }, [accountInfo, pendingTransaction]);
+
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') sendMessage();
     };
+
+    const memoizedMessages = useMemo(() => {
+        return messages.map((msg, index) => (
+            <Box
+                key={index}
+                sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    marginY: 1,
+                    gap: 1,
+                    justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                }}
+            >
+                <Avatar
+                    sx={{
+                        bgcolor: msg.sender === 'user' ? '#007bff' : '#e9ecef',
+                        color: msg.sender === 'user' ? 'white' : 'black',
+                    }}
+                >
+                    {msg.sender === 'user' ? <PersonIcon /> : <RobotIcon />}
+                </Avatar>
+                <Paper
+                    sx={{
+                        padding: 2,
+                        borderRadius: 1,
+                        backgroundColor: msg.sender === 'user' ? '#007bff' : '#e9ecef',
+                        color: msg.sender === 'user' ? 'white' : 'black',
+                        maxWidth: '75%',
+                    }}
+                >
+                    <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
+                        {msg.sender === 'user' ? 'You' : 'Openify Assistant'}
+                    </Typography>
+                    <Typography dangerouslySetInnerHTML={{ __html: msg.text }} />
+                </Paper>
+            </Box>
+        ));
+    }, [messages]);
 
     return (
         <Container sx={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'space-between' }}>
             <Box sx={{ flexGrow: 1, padding: 2, overflowY: 'auto' }}>
-                {messages.map((msg, index) => (
-                    <Box
-                        key={index}
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            marginY: 1,
-                            gap: 1,
-                            justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                        }}
-                    >
-                        <Avatar
-                            sx={{
-                                bgcolor: msg.sender === 'user' ? '#007bff' : '#e9ecef',
-                                color: msg.sender === 'user' ? 'white' : 'black',
-                            }}
-                        >
-                            {msg.sender === 'user' ? <PersonIcon /> : <RobotIcon />}
-                        </Avatar>
-                        <Paper
-                            sx={{
-                                padding: 2,
-                                borderRadius: 1,
-                                backgroundColor: msg.sender === 'user' ? '#007bff' : '#e9ecef',
-                                color: msg.sender === 'user' ? 'white' : 'black',
-                                maxWidth: '75%',
-                            }}
-                        >
-                            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-                                {msg.sender === 'user' ? msg.sender : 'Openify Assistant'}
-                            </Typography>
-                            <Typography
-                                dangerouslySetInnerHTML={{ __html: msg.text }}
-                            />
-                        </Paper>
-                    </Box>
-                ))}
+                {memoizedMessages}
             </Box>
             <Box sx={{ display: 'flex', padding: 2, backgroundColor: '#f8f9fa' }}>
                 <TextField
@@ -169,7 +202,7 @@ function App() {
                     size="small"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                    onKeyPress={handleKeyPress}
                     sx={{ marginRight: 2 }}
                 />
                 <Button variant="contained" onClick={sendMessage}>
