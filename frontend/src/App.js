@@ -116,7 +116,7 @@ function App() {
         setMessages((prev) => [...prev, userMessage]);
 
         const responseMessage = await getGPTResponse(input);
-        setMessages((prev) => [...prev, userMessage, responseMessage]);
+        setMessages((prev) => [...prev, responseMessage]);
 
         setInput('');
     }, [input]);
@@ -133,7 +133,14 @@ function App() {
                 body: JSON.stringify({ message: input, accountInfo }),
             });
 
-            const data = await response.json();
+            let data;
+
+            try {
+                data = await response.json();
+            } catch {
+                console.log(response);
+                return { sender: 'bot', text: `JSON Parsing Error.<br/>${response.status}: ${response.statusText}` };
+            }
 
             if (data.isTransaction) {
                 setPendingTransaction(true);
