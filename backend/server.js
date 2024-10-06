@@ -4,15 +4,17 @@ const bodyParser = require('body-parser');
 const { ChatOpenAI } = require('@langchain/openai');
 const { sendTransaction } = require('./blockchainHandler');
 
+const promptTemp = 0.0, generateTemp = 0.7
+
 const promptModel = new ChatOpenAI({
     model: "gpt-3.5-turbo",
-    temperature: 0.0,
+    temperature: promptTemp,
     apiKey: process.env.OPENAI_API_KEY
 });
 
 const generateModel = new ChatOpenAI({
     model: "gpt-3.5-turbo",
-    temperature: 0.7,
+    temperature: generateTemp,
     apiKey: process.env.OPENAI_API_KEY
 });
 
@@ -162,16 +164,16 @@ app.post('/api/gpt', async (req, res) => {
         //blockchainMain().catch(console.error);
 
         const gptMessage = await handlePrompt(userMessage);
-        console.log(gptMessage);
+        //console.log(gptMessage);
 
         if (gptMessage.type == 'general') {
-            console.log(`Human: ${userMessage}\nGPT (general): ${gptMessage.info}`);
+            //console.log(`Human: ${userMessage}\nGPT (general): ${gptMessage.info}`);
             res.json({ reply: gptMessage.info, isTransaction: false });
         }
         else if (gptMessage.type == 'transaction') {
-            console.log("Transaction");
+            //console.log("Transaction");
             const reply = `Amount: <code>${gptMessage.amount}</code> $DOT<br/>Destination: <code>${gptMessage.dest}</code>${gptMessage.allowDeath ? "Allow Death: True<br/>" : ""}<br/>Please confirm by sending <b>CONFIRM</b>.`;
-            console.log(`Human: ${userMessage}\nGPT (transaction): ${reply}`);
+            //console.log(`Human: ${userMessage}\nGPT (transaction): ${reply}`);
             res.json({ reply: reply, isTransaction: true, amount: gptMessage.amount, dest: gptMessage.dest, allowDeath: true });
         }
         else if (gptMessage.type == 'account') {
