@@ -4,3 +4,8 @@
 [ ] Add in account related additional information
 [x] Confirm transactions which would destroy user account (less than 1 DOT)
 [ ] Connect with Subscan to support browsing ALL recent transactions, and investigating specific user accounts
+[ ] Fix json response issues (backend)
+[ ] Unnecessary component cleanup
+[ ] Logo redesign
+[ ] UI redesign
+
