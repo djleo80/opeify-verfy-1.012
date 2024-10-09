@@ -160,56 +160,50 @@ app.post('/api/gpt', async (req, res) => {
         return res.status(400).json({ error: 'Invalid account info' });
     }
 
-    try {
-        // blockchainMain().catch(console.error);
+    const gptMessage = await handlePrompt(userMessage);
+    let reply, promptText, response;
 
-        const gptMessage = await handlePrompt(userMessage);
-        let reply, promptText, response;
+    switch (gptMessage.type) {
+        case 'general':
+            //console.log(`Human: ${userMessage}\nGPT (general): ${gptMessage.info}`);
+            res.json({ reply: gptMessage.info, isTransaction: false });
+            return; // Exit the function
 
-        switch (gptMessage.type) {
-            case 'general':
-                //console.log(`Human: ${userMessage}\nGPT (general): ${gptMessage.info}`);
-                res.json({ reply: gptMessage.info, isTransaction: false });
-                return; // Exit the function
+        case 'transaction':
+            //console.log("Transaction");
+            reply = `Amount: <code>${gptMessage.amount}</code> $DOT<br/>Destination: <code>${gptMessage.dest}</code>${gptMessage.allowDeath ? "Allow Death: True<br/>" : ""}<br/>Please confirm by sending <b>CONFIRM</b>.`;
+            //console.log(`Human: ${userMessage}\nGPT (transaction): ${reply}`);
+            res.json({
+                reply: reply,
+                isTransaction: true,
+                amount: gptMessage.amount,
+                dest: gptMessage.dest,
+                allowDeath: gptMessage.allowDeath
+            });
+            return; // Exit the function
 
-            case 'transaction':
-                //console.log("Transaction");
-                reply = `Amount: <code>${gptMessage.amount}</code> $DOT<br/>Destination: <code>${gptMessage.dest}</code>${gptMessage.allowDeath ? "Allow Death: True<br/>" : ""}<br/>Please confirm by sending <b>CONFIRM</b>.`;
-                //console.log(`Human: ${userMessage}\nGPT (transaction): ${reply}`);
-                res.json({
-                    reply: reply,
-                    isTransaction: true,
-                    amount: gptMessage.amount,
-                    dest: gptMessage.dest,
-                    allowDeath: gptMessage.allowDeath
-                });
-                return; // Exit the function
+        case 'account':
+            promptText = templateAccountEnquiry.replace('{account_info}', accountInfoStr)
+            .replace('{user_enquiry}', gptMessage.query);
+            response = await generateModel.invoke(promptText);
+            res.json({ reply: response.content, isAccount: true });
+            return; // Exit the function
 
-            case 'account':
-                promptText = templateAccountEnquiry.replace('{account_info}', accountInfoStr)
-                .replace('{user_enquiry}', gptMessage.query);
-                response = await generateModel.invoke(promptText);
-                res.json({ reply: response.content, isAccount: true });
-                return; // Exit the function
+        case 'blockchains':
+            promptText = blockchainPrompt.replace('{query}', gptMessage.query);
+            response = await generateModel.invoke(promptText);
+            res.json({ reply: response.content, isTransaction: false });
+            return; // Exit the function
 
-            case 'blockchains':
-                promptText = blockchainPrompt.replace('{query}', gptMessage.query);
-                response = await generateModel.invoke(promptText);
-                res.json({ reply: response.content, isTransaction: false });
-                return; // Exit the function
+        case 'smart_contract':
+            promptText = smartContractPrompt.replace('{query}', gptMessage.query);
+            response = await generateModel.invoke(promptText);
+            res.json({ reply: response.content, isTransaction: false });
+            return; // Exit the function
 
-            case 'smart_contract':
-                promptText = smartContractPrompt.replace('{query}', gptMessage.query);
-                response = await generateModel.invoke(promptText);
-                res.json({ reply: response.content, isTransaction: false });
-                return; // Exit the function
-
-            default:
-                res.json({ reply: `Unable to process machine response.\n${gptMessage.content}`, isTransaction: false });
-                return; // Exit the function
-        }
-    } catch (error) {
-        res.status(500).send('Error communicating with GPT API');
+        default:
+            res.json({ reply: `Unable to process machine response.\n${gptMessage.content}`, isTransaction: false });
+            return; // Exit the function
     }
 });
 
