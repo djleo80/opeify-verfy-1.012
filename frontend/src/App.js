@@ -23,29 +23,24 @@ let allowDeath = null;
 
 async function initializePolkadot(setAccountInfo) {
     try {
-        // Enable Polkadot.js extension
         const extensions = await web3Enable('OpeifyVerfy');
         if (extensions.length === 0) {
             console.log('Please install the Polkadot.js extension.');
             return;
         }
 
-        // Get all accounts
         const accounts = await web3Accounts();
         if (accounts.length === 0) {
             console.log('No accounts found. Please add an account to the Polkadot.js extension.');
             return;
         }
 
-        // Connect to Polkadot network
         const provider = new WsProvider('wss://rpc.polkadot.io');
         api = await ApiPromise.create({ provider });
         account = accounts[0];
 
-        // Fetch account balance
         const { data: { free: balance } } = await api.query.system.account(account.address);
 
-        // Update account info string
         accountInfoStr = accountInfoStrTemplate
             .replace('{pub_key_polk}', account.address)
             .replace('{pub_key_subtrate}', account.address)
@@ -104,7 +99,6 @@ function App() {
     const [accountInfo, setAccountInfo] = useState('');
     const [pendingTransaction, setPendingTransaction] = useState(false);
 
-    // Initialize Polkadot when the component mounts
     useEffect(() => {
         initializePolkadot(setAccountInfo);
     }, []);
@@ -151,6 +145,11 @@ function App() {
 
             return { sender: 'bot', text: data.reply };
         } catch (error) {
+
+            if (!error.message) {
+                return { sender: 'bot', text: `Error: Unknown Error` };
+            }
+
             return { sender: 'bot', text: `Error: ${error.message}` };
         }
     }, [accountInfo, pendingTransaction]);
