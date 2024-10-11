@@ -104,16 +104,13 @@ function App() {
     }, []);
 
     const sendMessage = useCallback(async () => {
-        if (input.trim() === '') return;
+        if (!input.trim()) return;
 
-        const userMessage = { sender: 'user', text: input };
-        setMessages((prev) => [...prev, userMessage]);
-
+        setMessages((prev) => [...prev, { sender: 'user', text: input }]);
         const responseMessage = await getGPTResponse(input);
         setMessages((prev) => [...prev, responseMessage]);
-
         setInput('');
-    }, [input]);
+    }, [input, getGPTResponse]);
 
     const getGPTResponse = useCallback(async (input) => {
         if (input === 'CONFIRM' && pendingTransaction) {
@@ -127,14 +124,12 @@ function App() {
                 body: JSON.stringify({ message: input, accountInfo }),
             });
 
-            let data;
-
-            try {
-                data = await response.json();
-            } catch {
-                console.log(response);
-                return { sender: 'bot', text: `JSON Parsing Error.<br/>${response.status}: ${response.statusText}` };
-            }
+            const data = await response.json().catch(() => {
+                return {
+                    sender: 'bot',
+                    text: `JSON Parsing Error.<br/>${response.status}: ${response.statusText}`,
+                };
+            });
 
             if (data.isTransaction) {
                 setPendingTransaction(true);
@@ -145,21 +140,19 @@ function App() {
 
             return { sender: 'bot', text: data.reply };
         } catch (error) {
-
-            if (!error.message) {
-                return { sender: 'bot', text: `Error: Unknown Error` };
-            }
-
-            return { sender: 'bot', text: `Error: ${error.message}` };
+            return {
+                sender: 'bot',
+                text: `Error: ${error.message || 'Unknown Error'}`,
+            };
         }
     }, [accountInfo, pendingTransaction]);
 
-    const handleKeyPress = (e) => {
+    const handleKeyDown = useCallback((e) => {
         if (e.key === 'Enter') sendMessage();
-    };
+    }, [sendMessage]);
 
-    const memoizedMessages = useMemo(() => {
-        return messages.map((msg, index) => (
+    const memoizedMessages = useMemo(() => (
+        messages.map((msg, index) => (
             <Box
                 key={index}
                 sx={{
@@ -193,8 +186,8 @@ function App() {
                     <Typography dangerouslySetInnerHTML={{ __html: msg.text }} />
                 </Paper>
             </Box>
-        ));
-    }, [messages]);
+        ))
+    ), [messages]);
 
     return (
         <Container sx={{ display: 'flex', flexDirection: 'column', height: '100vh', justifyContent: 'space-between' }}>
@@ -208,7 +201,7 @@ function App() {
                     size="small"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyDown}
                     sx={{ marginRight: 2 }}
                 />
                 <Button variant="contained" onClick={sendMessage}>
