@@ -165,14 +165,11 @@ app.post('/api/gpt', async (req, res) => {
 
     switch (gptMessage.type) {
         case 'general':
-            //console.log(`Human: ${userMessage}\nGPT (general): ${gptMessage.info}`);
             res.json({ reply: gptMessage.info, isTransaction: false });
-            return; // Exit the function
+            return;
 
         case 'transaction':
-            //console.log("Transaction");
             reply = `Amount: <code>${gptMessage.amount}</code> $DOT<br/>Destination: <code>${gptMessage.dest}</code>${gptMessage.allowDeath ? "Allow Death: True<br/>" : ""}<br/>Please confirm by sending <b>CONFIRM</b>.`;
-            //console.log(`Human: ${userMessage}\nGPT (transaction): ${reply}`);
             res.json({
                 reply: reply,
                 isTransaction: true,
@@ -180,30 +177,30 @@ app.post('/api/gpt', async (req, res) => {
                 dest: gptMessage.dest,
                 allowDeath: gptMessage.allowDeath
             });
-            return; // Exit the function
+            return;
 
         case 'account':
             promptText = templateAccountEnquiry.replace('{account_info}', accountInfoStr)
             .replace('{user_enquiry}', gptMessage.query);
             response = await generateModel.invoke(promptText);
             res.json({ reply: response.content, isAccount: true });
-            return; // Exit the function
+            return;
 
         case 'blockchains':
             promptText = blockchainPrompt.replace('{query}', gptMessage.query);
             response = await generateModel.invoke(promptText);
             res.json({ reply: response.content, isTransaction: false });
-            return; // Exit the function
+            return;
 
         case 'smart_contract':
             promptText = smartContractPrompt.replace('{query}', gptMessage.query);
             response = await generateModel.invoke(promptText);
             res.json({ reply: response.content, isTransaction: false });
-            return; // Exit the function
+            return;
 
         default:
             res.json({ reply: `Unable to process machine response.\n${gptMessage.content}`, isTransaction: false });
-            return; // Exit the function
+            return;
     }
 });
 
